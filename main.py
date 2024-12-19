@@ -48,11 +48,10 @@ def main():
         caneva.draw_circle((140, 100), 50, (0, 255, 255), -1, alpha=0.5)
 
         mask = np.zeros((HEIGHT, WIDTH))
-        center = np.array([HEIGHT // 2, WIDTH // 2])
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                mask[i, j] = 255 if i % 2 == 0 else 0
-        caneva.add_mask(mask)
+                mask[i, j] = ((i + j) % 20) / 20.0 if 50 < i < 100 else 0
+        caneva.add_mask(mask, use_values_between_0_and_1=True)
 
 
         render.clear()
