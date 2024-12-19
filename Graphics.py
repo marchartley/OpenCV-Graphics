@@ -10,6 +10,7 @@ class Graphic:
         Initialize the Drawing object with an image.
         :param image: numpy array representing the image (height, width, channels)
         """
+        self.image = None
         self.reset_image(image)
 
     def reset_image(self, image):
@@ -23,6 +24,13 @@ class Graphic:
             self.image = np.zeros((image[1], image[0], 4), dtype=np.uint8) # Consider that "image" is in fact a Tuple(width, height)
             self.image[:,:,3] = 0
         return self
+
+    def add_mask(self, mask_image: np.ndarray, use_values_between_0_and_1: bool = False):
+        if len(mask_image.shape) == 3:
+            mask_image = np.reshape(mask_image, (mask_image.shape[0], mask_image.shape[1]))
+        if use_values_between_0_and_1:
+            mask_image = np.clip(mask_image * 255, 0, 255).astype(np.uint8)
+        self.image[:,:,3] = (255 - mask_image)
 
     def _blend_with_alpha(self, position, color, alpha):
         """

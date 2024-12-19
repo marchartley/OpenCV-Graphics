@@ -1,3 +1,5 @@
+import numpy as np
+
 from Graphics import Graphic, SceneRender
 import cv2
 
@@ -44,6 +46,13 @@ def main():
         caneva.draw_circle((90, 100), 50, (0, 0, 255), -1, alpha=0.9)
         # Un deuxième cercle centré en (100, 50), de 50 pixels de rayon, jaune, rempli (-1), et avec une plus forte transparence
         caneva.draw_circle((140, 100), 50, (0, 255, 255), -1, alpha=0.5)
+
+        mask = np.zeros((HEIGHT, WIDTH))
+        center = np.array([HEIGHT // 2, WIDTH // 2])
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                mask[i, j] = 255 if i % 2 == 0 else 0
+        caneva.add_mask(mask)
 
 
         render.clear()
