@@ -50,7 +50,7 @@ def main():
         mask = np.zeros((HEIGHT, WIDTH))
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                mask[i, j] = ((i + j) % 20) / 20.0 if 50 < i < 100 else 0
+                mask[i, j] = abs(10 - (i + j) % 20) / 10.0 if 50 < i < 100 else 0
         caneva.add_mask(mask, use_values_between_0_and_1=True)
 
 
