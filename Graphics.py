@@ -10,6 +10,9 @@ class Graphic:
         Initialize the Drawing object with an image.
         :param image: numpy array representing the image (height, width, channels)
         """
+        self.reset_image(image)
+
+    def reset_image(self, image):
         if isinstance(image, np.ndarray):
             if image.shape[2] == 3:
                 self.image = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2BGRA)
@@ -19,6 +22,7 @@ class Graphic:
         else:
             self.image = np.zeros((image[1], image[0], 4), dtype=np.uint8) # Consider that "image" is in fact a Tuple(width, height)
             self.image[:,:,3] = 0
+        return self
 
     def _blend_with_alpha(self, position, color, alpha):
         """
