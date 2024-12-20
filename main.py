@@ -13,7 +13,7 @@ def main():
     smiley.resize((50, 50), cv2.INTER_NEAREST)
 
     # Utilisation de la webcam
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)
 
     # Instancie le "moteur de rendu"
     render = SceneRender((WIDTH, HEIGHT))

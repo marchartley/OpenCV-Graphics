@@ -11,9 +11,27 @@ class Graphic:
         :param image: numpy array representing the image (height, width, channels)
         """
         self.image = None
+        self._initial_image = None
         self.reset_image(image)
 
-    def reset_image(self, image):
+    def width(self):
+        return self.image.shape[1]
+
+    def height(self):
+        return self.image.shape[0]
+
+    def reset_image(self, image = None):
+        if image is not None:
+            if isinstance(image, np.ndarray):
+                self._initial_image = image.copy()
+            else:
+                self._initial_image = image
+        else:
+            if isinstance(image, np.ndarray):
+                image = self._initial_image.copy()
+            else:
+                image = self._initial_image
+
         if isinstance(image, np.ndarray):
             if image.shape[2] == 3:
                 self.image = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2BGRA)
@@ -91,7 +109,7 @@ class Graphic:
         cv2.addWeighted(temp_image, alpha, self.image, 1 - alpha, 0, self.image)
         return self
 
-    def draw_text(self, text, position, font_path, font_size, color, alpha = 1.0):
+    def draw_text(self, text, position, font_path, font_size, color, alpha = 1.0, center = False, box_size = (0, 0)):
         """
         Draw text on the image using a custom TTF font.
         :param text: String - the text to draw.
@@ -107,6 +125,9 @@ class Graphic:
         pil_image = Image.fromarray(rgb_image)
         draw = ImageDraw.Draw(pil_image)
         font = ImageFont.truetype(font_path, font_size)
+        if center:
+            _, _, w, h = draw.textbbox((0, 0), text, font=font)
+            position = (int(position[0] + (box_size[0]/2 - w/2)), int(position[1] + (box_size[1]/2 - h/2)))
         draw.text(position, text, font=font, fill=color)
 
         temp_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGBA2BGRA)
@@ -305,29 +326,54 @@ class SceneRender:
         Merge all layers onto a base canvas and return the final image.
         :return: numpy array, the merged final image.
         """
-
         # Create a blank canvas
         final_image = np.zeros((self.base_size[1], self.base_size[0], 3), dtype=np.uint8)
 
         for imageManager, position, alphaCoef in self.layers:
-            image = imageManager.get_image()
+            image = imageManager.get_image().copy()
+
+            # Starting positions may be negative
+            start_x = int(position[0])
+            start_y = int(position[1])
+
+            # Adjust start_x and start_y if they are negative
+            if start_x < 0:
+                image = image[:, -start_x:]  # Crop the image from the left
+                start_x = 0
+            if start_y < 0:
+                image = image[-start_y:, :]  # Crop the image from the top
+                start_y = 0
+
+            if start_x >= self.base_size[0]:
+                continue
+            if start_y >= self.base_size[1]:
+                continue
+
             # Determine the region of the canvas that the layer will occupy
-            y_start = position[1]
-            y_end = y_start + image.shape[0]
-            x_start = position[0]
-            x_end = x_start + image.shape[1]
+            end_x = start_x + image.shape[1]
+            end_y = start_y + image.shape[0]
 
-            # Check boundaries and adjust if necessary
-            if x_end > self.base_size[0]:
-                x_end = self.base_size[0]
-                image = image[:, :x_end - x_start]
-            if y_end > self.base_size[1]:
-                y_end = self.base_size[1]
-                image = image[:y_end - y_start, :]
+            # start_x = int(start_x)
+            # start_y = int(start_y)
+            # end_x = int(end_x)
+            # end_y = int(end_y)
 
-            # Place the image on the final canvas
-            alpha = alphaCoef * np.reshape(image[:,:,3].astype(float), (image.shape[0], image.shape[1], 1)) / 255.0
-            final_image[y_start:y_end, x_start:x_end] = (image[:,:,:3] * (alpha) + final_image[y_start:y_end, x_start:x_end] * (1 - alpha)).astype(np.uint8)
+            # Ensure the image does not go out of the canvas boundaries
+            if end_x >= self.base_size[0]:
+                image = image[:, :(self.base_size[0] - start_x)]
+                end_x = self.base_size[0]
+            if end_y >= self.base_size[1]:
+                image = image[:(self.base_size[1] - start_y), :]
+                end_y = self.base_size[1]
+
+            # Check if the image layer has an alpha channel
+            if image.shape[2] >= 4:
+                alpha = alphaCoef * (image[:, :, 3] / 255.0).reshape((image.shape[0], image.shape[1], 1))
+                blend_area = final_image[start_y:end_y, start_x:end_x]
+                image_rgb = image[:, :, :3]
+                final_image[start_y:end_y, start_x:end_x] = (image_rgb * alpha + blend_area * (1 - alpha)).astype(np.uint8)
+            else:
+                final_image[start_y:end_y, start_x:end_x] = image
 
         return final_image
 
